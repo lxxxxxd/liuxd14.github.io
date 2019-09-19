@@ -1,37 +1,31 @@
-## Welcome to GitHub Pages
+# 刘小东的博客主页
 
-You can use the [editor on GitHub](https://github.com/lxxxxxd/liuxd14.github.io/edit/master/README.md) to maintain and preview the content for your website in Markdown files.
+**踏实耕耘，攀登技术高峰**
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+## 个人开源项目
 
-### Markdown
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+## 计算机基础
 
-```markdown
-Syntax highlighted code block
+### 1.数据结构
 
-# Header 1
-## Header 2
-### Header 3
+### 2.算法
 
-- Bulleted
-- List
+### 3.编程语言
 
-1. Numbered
-2. List
+## 感兴趣方向
 
-**Bold** and _Italic_ and `Code` text
+### 1.分布式
 
-[Link](url) and ![Image](src)
-```
+### 2.云原生技术
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
+## 兴趣爱好
 
-### Jekyll Themes
+跑步，乒乓球，看书
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/lxxxxxd/liuxd14.github.io/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+### Contact me
+[link][https://lxxxxxd.github.io]
 
-### Support or Contact
+Phone No : 13619203665
 
-Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+Email: 1091665839@qq.com
