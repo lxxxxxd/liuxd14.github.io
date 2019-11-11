@@ -1,10 +1,19 @@
+##libnetwork设计与实现
+
 简介：进行docker容器网络管理，实现了容器网络模型（CNM）
-CNM：容器网络模型（The Container Network Model），为容器提供抽象网络环境，这种抽象的网络环境可以支持多种网络驱动：bridge，null，host，overlay，remote。模型基于以下三个组件：
+
+###CNM
+
+容器网络模型（The Container Network Model），为容器提供抽象网络环境，这种抽象的网络环境可以支持多种网络驱动：bridge，null，host，overlay，remote。模型基于以下三个组件：
+
 sandbox：负责容器网络栈配置，容器网络网卡管理，路由表和DNS服务设置。实现为一个Linux Network Namespace或者FreeBSD Jail或者其他类似的概念。一个sandbox包含多个指向各自网络的endpoint。
+
 network：一组可以直接相互通信的端点，实现可能是一个网桥，VLAN等。network包含多个endpoint。
+
 endpoint：endpoint帮助sandbox加入一个network，实现为veth 对，Open vSwitch软件交换机端口或者类似的东西。如果建立连接，endpoint只属于一个特定的网络和一个特定的sandbox。
 
-CNM对象：
+###CNM对象
+
 NetworkController：为用户（Docker Engine）提供一个操作入口，爆露了一个简单的API来分配和管理网络资源。libnetwork提供了多个可用的驱动。NetworkController对象允许用户为给定的网络绑定一个特定的驱动。
 Driver：不是一个用户可以见的对象，Driver提供了真正的网络实现。NetworkController提供了对于libnetwork透明的被驱动直接处理的API（options / labels）来配置网络驱动。网络驱动包括：induilt（Bridge，Host，None，Overlay），remote（plugin接入），这些驱动可以满足多种使用和部署场景。现在，特定的驱动拥有某个网络，负责管理这个网络。在未来，多个驱动参与各种网络管理功能。
 Network: 就是CNM:network，NetworkController提供API创建和管理Network对象。当Network对象创建或者更新后，对应的网络驱动Driver会收到通知。libnetwork在抽象层让Network对象提供了一组属于同一个网络的endpoint之间的连接，并与其他的完全隔离。Driver对象真正提供连接和隔离。连接可以是在同一台主机上或者穿插在多个主机上。因此，Network对象在集群中有全局作用域。
