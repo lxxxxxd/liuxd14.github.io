@@ -36,52 +36,53 @@ CNM的消费者，比如Docker，通过CNM对象和它的api进行交互，将�
 
 1.register：驱动程序向NetworkController注册。内置驱动程序注册在libnetwork内部，而远程驱动程序通过插件机制注册到libnetwork（插件机制是WIP）。每个驱动程序处理特定的网络类型。
 
-2.NetworkController对象是使用libnetwork.New（）API创建的，用于管理网络的分配，并可以选择使用特定于Driver的Options配置Driver。
+2.NetworkController对象是使用libnetwork.New()API创建的，用于管理网络的分配，并可以选择使用特定于Driver的Options配置Driver。
 
-3.通过提供名称（name）和网络类型（networkType），使用控制器的NewNetwork（） API创建网络。networkType参数有助于选择相应的驱动程序并将创建的网络绑定到该驱动程序。从现在起，网络上的任何操作都将由该驱动程序处理。
+3.通过提供名称（name）和网络类型(networkType)，使用控制器的NewNetwork()API创建网络。networkType参数有助于选择相应的驱动程序并将创建的网络绑定到该驱动程序。从现在起，网络上的任何操作都将由该驱动程序处理。
 
-4.controller.NewNetwork（）API还接受可选的options参数，该参数携带驱动程序特定的选项和标签，驱动程序可以使用这些选项和标签来实现其目的。
+4.controller.NewNetwork()API还接受可选的options参数，该参数携带驱动程序特定的选项和标签，驱动程序可以使用这些选项和标签来实现其目的。
 
-5.可以调用network.CreateEndpoint（）在给定的网络中创建新的端点。这个API还接受驱动程序可以使用的可选选项参数。这些“选项”同时带有共识的标签和特定于Driver标签。驱动程序将依次使用driver.CreateEndpoint调用，当在网络中创建endpoint时，它可以选择保留IPv4/IPv6地址。驱动程序将使用driverapi中定义的InterfaceInfo接口分配这些地址。需要IP/IPv6来完成endpoint作为服务定义以及endpoint公开的端口，因为实际上服务endpoint只是一个网络地址和应用程序容器正在侦听的端口号。
+5.可以调用network.CreateEndpoint()在给定的网络中创建新的端点。这个API还接受驱动程序可以使用的可选选项参数。这些“选项”同时带有共识的标签和特定于Driver标签。驱动程序将依次使用driver.CreateEndpoint调用，当在网络中创建endpoint时，它可以选择保留IPv4/IPv6地址。驱动程序将使用driverapi中定义的InterfaceInfo接口分配这些地址。需要IP/IPv6来完成endpoint作为服务定义以及endpoint公开的端口，因为实际上服务endpoint只是一个网络地址和应用程序容器正在侦听的端口号。
 
-6.endpoint.Join（）可用于将容器附加到endpoint。如果该容器不存在，则联接操作将创建沙箱。Drivers可以使用Sandbox的Key标识附加到同一容器的多个端点。这个API还接受驱动程序可以使用的可选Options。
+6.endpoint.Join()可用于将容器附加到endpoint。如果该容器不存在，则联接操作将创建沙箱。Drivers可以使用Sandbox的Key标识附加到同一容器的多个端点。这个API还接受驱动程序可以使用的可选Options。
 
-虽然这不是LibNetwork的直接设计问题，但我们强烈鼓励Docker这样的用户在容器的Start（）生命周期中调用endpoint.Join（），在容器运行之前调用它。作为Docker集成的一部分，这将得到处理。
+    虽然这不是LibNetwork的直接设计问题，但我们强烈鼓励Docker这样的用户在容器的Start（）生命周期中调用endpoint.Join（），在容器运行之前调用它。作为Docker集成的一部分，这将得到处理。
 
-endpoint join（）API的常见问题之一是，为什么我们需要一个API来创建端点，而另一个API来连接端点。
+    endpoint join（）API的常见问题之一是，为什么我们需要一个API来创建端点，而另一个API来连接端点。
 
-答案是基于这样一个事实：端点表示一个服务，该服务可能由容器支持，也可能不由容器支持。创建endpoint时，它将保留其资源，以便以后可以将任何容器附加到终结点并获得一致的网络行为。
+    答案是基于这样一个事实：端点表示一个服务，该服务可能由容器支持，也可能不由容器支持。创建endpoint时，它将保留其资源，以便以后可以将任何容器附加到终结点并获得一致的网络行为。
 
-7.当容器停止时，可以调用endpoint.Leave（）。驱动程序可以清除它在Join（）调用期间分配的状态。当最后一个引用endpoint离开网络时，LibNetwork将删除Sandbox。但是只要endpoint仍然存在，LibNetwork就会保留IP地址，并在容器（或任何容器）再次连接时重用。这样可以确保容器的资源在停止和重新启动时被重用。
+7.当容器停止时，可以调用endpoint.Leave()。驱动程序可以清除它在Join（）调用期间分配的状态。当最后一个引用endpoint离开网络时，LibNetwork将删除Sandbox。但是只要endpoint仍然存在，LibNetwork就会保留IP地址，并在容器（或任何容器）再次连接时重用。这样可以确保容器的资源在停止和重新启动时被重用。
 
-8.endpoint.Delete（）用于从网络中删除endpoint。这将导致删除终结点并清除缓存的sandbox.Info。
+8.endpoint.Delete()用于从网络中删除endpoint。这将导致删除终结点并清除缓存的sandbox.Info。
 
-9.network.Delete（）用于删除网络。如果存在网络上存在的任何端点，LIbNETs将不允许删除。
+9.network.Delete()用于删除网络。如果存在网络上存在的任何端点，LIbNETs将不允许删除。
 
 ### Drivers
 #### API
 Drivers本质上是libnetwork的扩展，为上面定义的所有libnetworkapi提供了实际的实现。因此，所有Network和Endpoint APIs都有1-1对应关系，其中包括：
 
-driver.Config
+    driver.Config
 
-driver.CreateNetwork
+    driver.CreateNetwork
 
-driver.DeleteNetwork
+    driver.DeleteNetwork
 
-driver.CreateEndpoint
+    driver.CreateEndpoint
 
-driver.DeleteEndpoint
+    driver.DeleteEndpoint
 
-driver.Join
+    driver.Join
 
-driver.Leave
+    driver.Leave
 
-这些面向Driver的APIs使用唯一标识符（networkid、endpointid，…）而不是name（如面向用户的APIs中所示）。
+这些面向Driver的APIs使用唯一标识符(networkid、endpointid，…)而不是name（如面向用户的APIs中所示）。
+
 这些APIs仍在发展，并且可以根据驱动程序的需求对它们进行更改，特别是在多主机网络方面。
 ### Driver语义
 
-Driver.CreateEndpoint
+    Driver.CreateEndpoint
 
 此方法通过方法interface和AddInterface传递接口EndpointInfo。
 
-如果接口返回的值为非零，则驱动程序应使用其中的接口信息（例如，将一个或多个地址视为静态提供），如果不能，则必须返回错误。如果该值为nil，则驱动程序应恰好分配一个新接口，并使用AddInterface记录它们；如果不能，则返回错误。如果接口为非零，则禁止使用AddInterface。
+如果接口返回的值为非零，则驱动程序应使用其中的接口信息(例如，将一个或多个地址视为静态提供)，如果不能，则必须返回错误。如果该值为nil，则驱动程序应恰好分配一个新接口，并使用AddInterface记录它们；如果不能，则返回错误。如果接口为非零，则禁止使用AddInterface。
