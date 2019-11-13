@@ -1,24 +1,24 @@
-## IPAM Driver
+# IPAM Driver
 
 在网络和端点生命周期中，CNM模型通过IPAM驱动程序控制网络和端点接口的IP地址分配。 Libnetwork具有默认的内置IPAM驱动程序，并允许动态插入第三方IPAM驱动程序。在创建网络时，用户可以指定哪个IPAM驱动程序libnetwork需要用于网络的IP地址管理。本文档说明了IPAM驱动程序需要遵循的API，以及与远程驱动程序相关的相应HTTPS请求/响应正文。
 
-### 远程IPAM驱动程序
+## 远程IPAM驱动程序
 
 在远程网络驱动程序注册的同一行（有关更多详细信息，请参见remote.md），libnetwork使用Init（）函数初始化ipams.remote软件包。它传递一个ipamapi.Callback作为参数，该参数实现RegisterIpamDriver（）。远程驱动程序包通过在plugins.Handle回调中提供该接口，使用此接口向libnetwork的NetworkController注册远程驱动程序。远程驱动程序通过Docker插件包进行注册并与libnetwork通信。 ipams.remote提供了远程驱动程序进程的代理。
 
-#### Protocol (协议)
+### Protocol (协议)
 
 和远程网络驱动所用的协议一样
 
-#### 握手
+### 握手
 
 在驱动程序注册期间，libnetwork将查询远程驱动程序的默认本地和全局地址空间字符串以及驱动程序功能。可以在本文档的相应部分中找到更详细的信息。
 
-#### 数据存储要求
+### 数据存储要求
 
 远程驱动程序负责管理其数据库。
 
-IPAM规范
+### IPAM规范
 
 远程IPAM驱动程序必须满足以下请求：
 
@@ -34,7 +34,7 @@ IPAM规范
 
 以下各节说明上述每个请求的语义，何时在 network/endpoint 生命周期内调用它们以及远程驱动程序HTTP请求/响应的相应的payload。
 
-##### IPAM配置和流程
+### IPAM配置和流程
 
 libnetwork用户可以在创建网络时通过NetworkOptionIpam setter函数提供与IPAM相关的配置。
 
@@ -92,7 +92,7 @@ libnetwork用户可以在创建网络时通过NetworkOptionIpam setter函数提�
 
 3.通过ReleasePool（）释放池
 
-##### GetDefaultAddressSpaces
+### GetDefaultAddressSpaces
 
 GetDefaultAddressSpaces返回此IPAM的默认本地和全局地址空间名称。地址空间是与其他地址空间的池隔离的一组不重叠的地址池。换句话说，同一池可以存在于N个不同的地址空间上。地址空间自然会映射到租户名称。在libnetwork中，与本地或全局地址空间相关联的含义是，本地地址空间不需要跨集群同步，而全局地址空间则需要同步。除非在IPAM配置中另外指定，否则libnetwork将根据所创建网络的范围从默认本地或默认全局地址空间请求地址池。例如，如果未在配置中另外指定，则libnetwork将从桥接网络的默认本地地址空间请求地址池，而从覆盖网络的默认全局地址空间请求地址池。
 
@@ -102,7 +102,8 @@ GetDefaultAddressSpaces返回此IPAM的默认本地和全局地址空间名称�
 	    "GlobalDefaultAddressSpace": string
     }
 
-##### RequestPool
+### RequestPool
+
 该API用于通过IPAM驱动程序注册地址池。多个相同的调用必须返回相同的结果。 IPAM驱动程序负责保留池的引用计数。
 
     RequestPool(addressSpace, pool, subPool string, options map[string]string, v6 bool) (string, *net.IPNet, map[string]string, error)
@@ -120,9 +121,13 @@ GetDefaultAddressSpaces返回此IPAM的默认本地和全局地址空间名称�
 注释：
 
 *`AddressSpace` IP地址空间。它表示一组非重叠池。
+
 *`Pool` CIDR格式的IPv4或IPv6地址池
+
 *`SubPool`地址池的可选子集，CIDR格式的ip范围
+
 *`Options` IPAM驱动程序特定选项的映射
+
 *`V6` IPAM自选池是否应为IPv6
 
 AddressSpace是唯一的必填字段。如果未指定池，则IPAM驱动程序可以选择返回自行选择的地址池。在这种情况下，如果呼叫者需要IPAM选择的IPv6池，则必须设置V6标志。具有空池和非空子池的请求应被拒绝为无效。如果未指定池，则IPAM将分配默认池之一。未指定Pool时，如果网络需要分配IPv6地址，则应设置V6标志。
@@ -138,77 +143,103 @@ AddressSpace是唯一的必填字段。如果未指定池，则IPAM驱动程序�
 注释：
 
 PoolID是此池的标识符。相同的池必须具有相同的池ID。
+
 池是CIDR格式的池
+
 数据是该池的IPAM驱动程序提供的元数据
-发布池
+
+### ReleasePool
+
 该API用于释放先前注册的地址池。
 
-ReleasePool（poolID字符串）错误
-对于此API，远程驱动程序将使用以下负载接收到URL /IpamDriver.ReleasePool的POST消息：
+    ReleasePool（poolID string）error
 
-{
-“ PoolID”：字符串
-}
-哪里：
+对于此API，远程驱动程序将使用以下payload接收到URL /IpamDriver.ReleasePool的POST消息：
+
+    {
+    “ PoolID”：string
+    }
+
+注释：
 
 PoolID是池标识符
+
 成功的响应为空：
 
-{}
-请求地址
+    {}
+
+### RequestAddress
+
 该API用于保留IP地址。
 
-RequestAddress（字符串，net.IP，map [string] string）（* net.IPNet，map [string] string，错误）
-对于此API，远程驱动程序将使用以下有效负载接收到URL /IpamDriver.RequestAddress的POST消息：
+    RequestAddress(string, net.IP, map[string]string) (*net.IPNet, map[string]string, error)
 
-{
-“ PoolID”：字符串
-“地址”：字符串
-“选项”：map [string] string
-}
-哪里：
+对于此API，远程驱动程序将使用以下payload接收到URL /IpamDriver.RequestAddress的POST消息：
+
+    {
+	"PoolID":  string
+	"Address": string
+	"Options": map[string]string
+    }
+
+注释：
 
 PoolID是池标识符
+
 地址是常规IP格式（A.B.C.D）的必需地址。如果无法满足该地址，则请求失败。如果为空，则IPAM驱动程序选择池中的任何可用地址
+
 选项是IPAM驱动程序特定的选项
+
 成功的响应形式为：
 
-{
-“地址”：字符串
-“数据”：map [string] string
-}
-哪里：
+    {
+	"Address": string
+	"Data":    map[string]string
+    }
 
-地址是CIDR格式（A.B.C.D / MM）分配的地址
-数据是一些IPAM驱动程序特定的元数据
-发布地址
+注释：
+
+Address 是CIDR格式（A.B.C.D / MM）分配的地址
+
+Data 是一些IPAM驱动程序特定的元数据
+
+### ReleaseAddress
+
 该API用于释放IP地址。
 
 对于此API，远程驱动程序将使用以下负载接收到URL /IpamDriver.ReleaseAddress的POST消息：
 
-{
-“ PoolID”：字符串
-“地址”：字符串
-}
-哪里：
+    {
+	"PoolID": string
+	"Address": string
+    }
+
+注释：
 
 PoolID是池标识符
-地址是要发布的IP地址
-GetCapabilities
+
+Address是要发布的IP地址
+
+### GetCapabilities
+
 在驱动程序注册期间，libnetwork将查询驱动程序的功能。驱动程序不一定要支持此URL端点。如果驱动程序不支持，则注册将成功，并将自动添加到内部驱动程序句柄的空功能。
 
 在注册过程中，远程驱动程序将收到没有有效负载的POST消息，指向URL /IpamDriver.GetCapabilities。驾驶员的回应应采用以下形式：
 
-{
-“ RequiresMACAddress”：布尔
-“ RequiresRequestReplay”：布尔
-}
-能力
-功能是要求，是远程ipam驱动程序在向libnetwork注册期间可以表达的功能。截至目前，libnetwork接受以下功能：
+    {
+        “ RequiresMACAddress”：bool
+        “ RequiresRequestReplay”：bool
+    }
 
-需要MAC地址
-它是一个布尔值，它告诉libnetwork ipam驱动程序是否需要知道接口MAC地址才能正确处理RequestAddress（）调用。如果为true，则在CreateEndpoint（）请求时，libnetwork将为该端点生成一个随机MAC地址（如果用户尚未提供明确的MAC地址），并在选项映射内请求IP地址时将其传递给RequestAddress（）。密钥将是netlabel.MacAddress常量：“ com.docker.network.endpoint.macaddress”。
+### Capabilities
 
-需要RequestReplay
-这是一个布尔值，它告诉libnetwork ipam驱动程序是否需要在重新加载守护程序时接收RequestPool（）和RequestAddress（）请求的重播。当libnetwork控制器正在初始化时，它会从本地存储中检索当前本地作用域网络的列表，如果设置了此功能标志，则它允许IPAM驱动程序通过为每个池和每个池重播RequestPool（）请求来重建池的数据库。本地网络拥有的每个网络网关的RequestAddress（）。这对于决定不保留分配给本地作用域的池的ipam驱动程序很有用。
+是远程ipam驱动程序在向libnetwork注册期间可以表达的能力。截至目前，libnetwork接受以下能力集合：
+
+#### RequiresMACAddress
+
+它是一个布尔值，它告诉libnetwork ipam驱动程序是否需要知道网卡的MAC地址才能正确处理RequestAddress（）调用。如果为true，则在CreateEndpoint（）请求时，libnetwork将为该端点生成一个随机MAC地址（如果用户尚未提供明确的MAC地址），并在选项映射内请求IP地址时将其传递给RequestAddress（），映射的key是netlabel.MacAddress常量：“ com.docker.network.endpoint.macaddress”。
+
+#### RequiresRequestReplay
+
+这是一个布尔值，它告诉libnetwork ipam驱动程序是否需要在重新加载守护程序时接收RequestPool（）和RequestAddress（）请求的响应。当libnetwork controller 正在初始化时，它会从本地存储中检索当前本地作用域网络的列表，如果设置了此功能标志，则它允许IPAM驱动程序通过为每个池和每个池响应RequestPool（）请求来重建池的数据库。本地网络拥有的每个网络网关的RequestAddress（）。这对于决定不保留分配给本地作用域的池的ipam驱动程序很有用。
     
