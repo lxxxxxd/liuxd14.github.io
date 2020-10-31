@@ -61,9 +61,14 @@ containerd.io:
 /usr/share/man/man1/ctr.1
 /usr/share/man/man5/containerd-config.toml.5
 ```
+
 ### 软件包源头
 
 上文我们已经对docker-ce的软件包进行了解剖和说明，接下来我们需要研究软件包的源头：软件包是如何构建的？软件包构建依赖那些开源项目？
-在开源社区，docker-ce在github上创建了一个开源项目，专门用于docker-ce软件包的发布，这里是项目地址：。
+在开源社区，docker-ce在github上创建了一个开源项目，专门用于docker-ce软件包的发布，这里是项目地址：https://github.com/docker/docker-ce ，可惜这个项目已经过时了，现在最新的docker-ce版本20.10版本已经不打算在这里进行发布了，这个项目将会被归档。
+|     组件名称     |             项目名称/项目地址            |               功能简述                |
+|----------------|----------------------------------------|--------------------------------------|
+|    docker      | cli/https://github.com:docker/cli      | docker-ce客户端命令行工具               |
 
+为了构建出适用于某个操作系统平台上的软件包，docker社区也创建了一个开源项目，项目地址；https://github.com/docker/docker-ce-packaging ,
 
